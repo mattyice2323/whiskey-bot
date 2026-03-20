@@ -1,6 +1,9 @@
-name: DEBUG
+name: Whiskey Sniper (Stock Detection)
 
 on:
+  schedule:
+    - cron: "*/7 14-23 * * *"
+    - cron: "*/7 0-3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -8,26 +11,104 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Debug step
+      - name: Install deps
+        run: pip install requests twilio
+
+      - name: Run sniper
+        env:
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
+          TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
+          YOUR_NUMBER: ${{ secrets.YOUR_NUMBER }}
         run: |
           python3 << 'EOF'
           import requests
+          import os
+          from twilio.rest import Client
 
-          print("STARTING DEBUG")
+          print("🚀 STOCK SNIPER STARTED")
 
-          url = "https://www.totalwine.com/search/all?text=makers+mark"
+          client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
+          FROM = os.environ["TWILIO_NUMBER"]
+          TO = os.environ["YOUR_NUMBER"]
 
-          headers = {
+          def send_text(msg):
+              print("TEXT:", msg)
+              client.messages.create(body=msg, from_=FROM, to=TO)
+
+          HEADERS = {
               "User-Agent": "Mozilla/5.0"
           }
 
-          r = requests.get(url, headers=headers)
+          # 🔥 ====== PASTE YOUR URLS HERE ======
+          PRODUCTS = {
 
-          print("STATUS:", r.status_code)
-          print("LENGTH:", len(r.text))
+              # EAGLE RARE
+              "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
+              "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-          print("FIRST 300 CHARS:")
-          print(r.text[:300])
+              # STAGG
+              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
 
-          print("DONE")
+              # WELLER
+              "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
+              "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
+
+              #JACK DANIELS
+              "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
+              "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
+
+              "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
+              "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
+
+              "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
+              "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
+
+              # ROCK HILL FARMS
+              "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
+              "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
+
+
+          }
+          # 🔥 ====== END PASTE SECTION ======
+
+          for name, url in PRODUCTS.items():
+              print(f"\nChecking {name}")
+
+              try:
+                  r = requests.get(url, headers=HEADERS, timeout=10)
+                  text = r.text.lower()
+
+                  # 🔥 STOCK DETECTION
+                  in_stock = any(x in text for x in [
+                      "add to cart",
+                      "pickup available"
+                  ])
+
+                  filename = f"{name}.txt"
+
+                  previous_status = None
+
+                  if os.path.exists(filename):
+                      with open(filename, "r") as f:
+                          previous_status = f.read()
+
+                  current_status = "in_stock" if in_stock else "out_of_stock"
+
+                  # 🔥 ALERT ONLY ON CHANGE TO IN STOCK
+                  if previous_status != current_status:
+                      if current_status == "in_stock":
+                          send_text(f"🔥 IN STOCK: {name}")
+                          print("IN STOCK ALERT")
+                      else:
+                          print("Now out of stock")
+
+                  with open(filename, "w") as f:
+                      f.write(current_status)
+
+              except Exception as e:
+                  print("Error:", e)
+
+          print("\n✅ DONE")
           EOF
