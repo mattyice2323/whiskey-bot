@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
+  push:
 
 jobs:
   run:
@@ -42,24 +43,31 @@ jobs:
 
           PRODUCTS = {
 
+              # EAGLE RARE
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
+              # STAGG
               "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
               "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
+              # WELLER
               "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
               "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
 
+              # JACK DANIELS 10
               "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
               "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
 
+              # JACK DANIELS 12
               "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
               "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
 
+              # JACK DANIELS 14
               "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
               "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
 
+              # TANYARD
               "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
           }
@@ -82,7 +90,7 @@ jobs:
                   r = requests.get(url, timeout=10)
                   text = r.text.lower()
 
-                  # 🔥 HASH FOR PAGE CHANGE
+                  # PAGE HASH
                   hash_now = hashlib.md5(text.encode()).hexdigest()
                   hash_file = f"{name}_hash.txt"
 
@@ -91,7 +99,7 @@ jobs:
                       with open(hash_file, "r") as f:
                           old_hash = f.read()
 
-                  # 🔥 STOCK SIGNALS
+                  # STOCK SIGNAL
                   in_stock = any(x in text for x in [
                       "add to cart",
                       "pickup available",
@@ -107,12 +115,12 @@ jobs:
 
                   current_status = "in_stock" if in_stock else "out"
 
-                  # ✅ STOCK ALERT (no spam)
+                  # STOCK ALERT
                   if current_status == "in_stock" and old_status != "in_stock":
                       send(f"🔥 IN STOCK: {name}")
                       any_found = True
 
-                  # ⚠️ PAGE CHANGE ALERT
+                  # PAGE CHANGE ALERT
                   elif old_hash and old_hash != hash_now:
                       send(f"⚠️ PAGE CHANGE: {name}")
                       any_found = True
@@ -127,7 +135,7 @@ jobs:
               except Exception as e:
                   print("error:", e)
 
-          # ✅ DAILY MESSAGE
+          # DAILY MESSAGE
           if not already_sent_today:
               send("✅ Bot running — daily check")
               with open(heartbeat_file, "w") as f:
