@@ -1,9 +1,6 @@
-name: Whiskey Sniper (Test Mode)
+name: Whiskey Sniper (TEST)
 
 on:
-  schedule:
-    - cron: "*/7 14-23 * * *"
-    - cron: "*/7 0-3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -46,6 +43,7 @@ jobs:
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
+              # ✅ FIXED STAGG
               "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
               "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
@@ -54,18 +52,7 @@ jobs:
 
               "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
               "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
-
-              "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
-              "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
-
-              "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
-              "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
-
-              "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
-              "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
           }
-
-          any_found = False
 
           for name, url in PRODUCTS.items():
               print(f"\nChecking {name}")
@@ -74,10 +61,7 @@ jobs:
                   r = requests.get(url, headers=HEADERS, timeout=10)
                   text = r.text.lower()
 
-                  in_stock = any(x in text for x in [
-                      "add to cart",
-                      "pickup available"
-                  ])
+                  in_stock = "add to cart" in text or "pickup available" in text
 
                   hash_now = hashlib.md5(text.encode()).hexdigest()
                   hash_file = f"{name}_hash.txt"
@@ -87,33 +71,20 @@ jobs:
                       with open(hash_file, "r") as f:
                           old_hash = f.read()
 
-                  status_file = f"{name}_status.txt"
-                  old_status = None
-                  if os.path.exists(status_file):
-                      with open(status_file, "r") as f:
-                          old_status = f.read()
-
-                  current_status = "in_stock" if in_stock else "out_of_stock"
-
-                  if old_status != current_status and current_status == "in_stock":
+                  if in_stock:
                       send_text(f"🔥 IN STOCK: {name}")
-                      any_found = True
 
                   elif old_hash and old_hash != hash_now:
                       send_text(f"⚠️ PAGE CHANGE: {name}")
-                      any_found = True
 
                   with open(hash_file, "w") as f:
                       f.write(hash_now)
 
-                  with open(status_file, "w") as f:
-                      f.write(current_status)
-
               except Exception as e:
                   print("Error:", e)
 
-          # 🔥 FORCE TEST TEXT
-          send_text("🧪 TEST: nothing found")
+          # 🔥 FORCE TEST TEXT (THIS IS WHAT YOU CARE ABOUT)
+          send_text("🧪 TEST: this should text you immediately")
 
-          print("\n✅ DONE")
+          print("✅ DONE")
           EOF
