@@ -1,4 +1,4 @@
-name: Whiskey Sniper (Real Detection)
+name: Debug Total Wine
 
 on:
   workflow_dispatch:
@@ -8,63 +8,25 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Install deps
-        run: pip install requests twilio
-
-      - name: Run sniper
-        env:
-          TWILIO_SID: ${{ secrets.TWILIO_SID }}
-          TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
-          TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
-          YOUR_NUMBER: ${{ secrets.YOUR_NUMBER }}
+      - name: Run debug
         run: |
           python3 << 'EOF'
           import requests
-          import os
-          from twilio.rest import Client
 
-          print("🚀 REAL SNIPER STARTED")
+          url = "https://www.totalwine.com/search/all?text=makers+mark"
 
-          client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
-          FROM = os.environ["TWILIO_NUMBER"]
-          TO = os.environ["YOUR_NUMBER"]
-
-          def send_text(msg):
-              print("SENDING:", msg)
-              client.messages.create(body=msg, from_=FROM, to=TO)
-
-          SEARCHES = {
-              "Stagg": "stagg",
-              "Weller": "weller",
-              "Eagle Rare": "eagle rare",
-              "Russell": "russell",
-              "Makers Mark (TEST)": "makers mark"
+          headers = {
+              "User-Agent": "Mozilla/5.0",
+              "Accept-Language": "en-US,en;q=0.9"
           }
 
-          alerted = set()
+          r = requests.get(url, headers=headers)
 
-          for name, query in SEARCHES.items():
-              print(f"\nChecking {name}")
+          print("STATUS:", r.status_code)
+          print("LENGTH:", len(r.text))
 
-              try:
-                  url = f"https://www.totalwine.com/search/api/search?text={query}&pageSize=24"
-                  r = requests.get(url)
-                  data = r.json()
-
-                  products = data.get("products", [])
-
-                  if products:
-                      msg = f"🔥 FOUND RESULTS: {name} ({len(products)} items)"
-                      print(msg)
-
-                      if msg not in alerted:
-                          send_text(msg)
-                          alerted.add(msg)
-                  else:
-                      print("No results")
-
-              except Exception as e:
-                  print("Error:", e)
-
-          print("\n✅ DONE")
+          # Print first 1000 chars so we can see what's inside
+          print("\n--- RESPONSE START ---\n")
+          print(r.text[:1000])
+          print("\n--- RESPONSE END ---")
           EOF
