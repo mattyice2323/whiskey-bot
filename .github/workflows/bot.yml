@@ -1,6 +1,9 @@
-name: Whiskey Bot
+name: Whiskey Sniper (Local Total Wine Only)
 
 on:
+  schedule:
+    - cron: "*/7 14-23 * * *"
+    - cron: "*/7 0-3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -8,52 +11,106 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Run script
+      - name: Install deps
+        run: pip install requests twilio
+
+      - name: Run sniper
+        env:
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
+          TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
+          YOUR_NUMBER: ${{ secrets.YOUR_NUMBER }}
         run: |
           python3 << 'EOF'
           import requests
-          from datetime import datetime
           import time
+          import os
+          from datetime import datetime
+          from twilio.rest import Client
 
-          print("START")
+          print("🚀 LOCAL TOTAL WINE SNIPER STARTED")
 
-          KEYWORDS = [
-          "stagg",
-          "weller",
-          "eagle rare"
-          ]
+          client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
+          FROM = os.environ["TWILIO_NUMBER"]
+          TO = os.environ["YOUR_NUMBER"]
 
-          STORES = {
-          "Total Wine": "https://www.totalwine.com/search/all?text=bourbon"
+          def send_text(msg):
+              client.messages.create(body=msg, from_=FROM, to=TO)
+
+          # 🔥 TARGETED SEARCHES
+          SEARCHES = {
+              "Stagg": "https://www.totalwine.com/search/all?text=stagg",
+              "Weller": "https://www.totalwine.com/search/all?text=weller",
+              "Eagle Rare": "https://www.totalwine.com/search/all?text=eagle+rare",
+              "Russell": "https://www.totalwine.com/search/all?text=russell",
+              "Jack 10/12/14": "https://www.totalwine.com/search/all?text=jack+daniels+aged"
           }
 
+          KEYWORDS = [
+              "stagg",
+              "weller",
+              "rock hill farms",
+              "russell",
+              "jack daniel",
+              "eagle rare",
+              "heaven hill",
+              "star hill"
+          ]
+
+          # 🔥 ONLY YOUR LOCAL STORES
+          LOCAL_STORES = [
+              "maple grove",
+              "minnetonka",
+              "st louis park",
+              "bloomington"
+          ]
+
+          alerted = set()
+
           def check(name, url):
-              print("Checking " + name)
+              print(f"\nChecking {name}")
+
               try:
-                  r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+                  r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
                   text = r.text.lower()
 
-                  found = []
-                  for k in KEYWORDS:
-                      if k in text:
-                          found.append(k)
+                  # keyword detection
+                  hits = [k for k in KEYWORDS if k in text]
 
-                  if found:
-                      print(name + " FOUND: " + ", ".join(found))
+                  # stock signal detection
+                  stock_signal = any(x in text for x in [
+                      "add to cart",
+                      "pickup available",
+                      "in stock"
+                  ])
+
+                  # 🔥 STRICT LOCAL FILTER
+                  local = any(store in text for store in LOCAL_STORES)
+
+                  if hits and stock_signal and local:
+                      msg = f"🔥 LOCAL DROP: {name}"
+                      print(msg)
+
+                      if msg not in alerted:
+                          send_text(msg)
+                          alerted.add(msg)
                   else:
-                      print(name + " none")
+                      print("No local signal")
 
-              except:
-                  print(name + " error")
+              except Exception as e:
+                  print("Error")
 
           hour = datetime.now().hour
 
-          if hour >= 8 and hour <= 22:
-              for name in STORES:
-                  check(name, STORES[name])
-                  time.sleep(2)
-          else:
-              print("Outside hours")
+          if 8 <= hour <= 22:
+              print("Running checks...\n")
 
-          print("DONE")
+              for name, url in SEARCHES.items():
+                  check(name, url)
+                  time.sleep(3)
+
+          else:
+              print("Outside store hours")
+
+          print("\n✅ DONE")
           EOF
