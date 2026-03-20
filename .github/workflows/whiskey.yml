@@ -35,32 +35,38 @@ jobs:
                   to='whatsapp:+16517885840'
               )
 
-          url = "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true"
+          PRODUCTS = {
+              "Makers Mark Maple Grove": "https://www.totalwine.com/p/3700175?s=1605",
+          }
 
           with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-              page = browser.new_page()
 
-              print("Loading page...")
-              page.goto(url, timeout=60000)
+              context = browser.new_context(
+                  user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                  locale="en-US"
+              )
 
-              # wait for page to fully load
-              page.wait_for_timeout(5000)
+              page = context.new_page()
 
-              content = page.content().lower()
+              # 🔥 IMPORTANT: visit homepage first (sets cookies/session)
+              page.goto("https://www.totalwine.com", timeout=60000)
+              page.wait_for_timeout(3000)
 
-              print("=== PAGE CONTENT CHECK ===")
-              print("add to cart" in content)
-              print("pickup" in content)
-              print("available" in content)
+              for name, url in PRODUCTS.items():
+                  print("Checking", name)
 
-              # ALSO print a snippet so we see what’s actually there
-              print(content[:2000])
+                  page.goto(url, timeout=60000)
+                  page.wait_for_timeout(5000)
 
-              if "add to cart" in content:
-                  send("🔥 FOUND ADD TO CART")
-              else:
-                  send("❌ NO ADD TO CART FOUND")
+                  content = page.content().lower()
+
+                  print("add to cart found?", "add to cart" in content)
+
+                  if "add to cart" in content:
+                      send(f"🔥 IN STOCK: {name}")
+                  else:
+                      send(f"❌ NOT DETECTED: {name}")
 
               browser.close()
           EOF
