@@ -1,4 +1,4 @@
-name: Whiskey Sniper (Stock Detection)
+name: Whiskey Sniper (Test Mode)
 
 on:
   schedule:
@@ -24,9 +24,10 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
+          import hashlib
           from twilio.rest import Client
 
-          print("🚀 STOCK SNIPER STARTED")
+          print("🚀 TEST SNIPER STARTED")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
           FROM = os.environ["TWILIO_NUMBER"]
@@ -40,22 +41,17 @@ jobs:
               "User-Agent": "Mozilla/5.0"
           }
 
-          # 🔥 ====== PASTE YOUR URLS HERE ======
           PRODUCTS = {
 
-              # EAGLE RARE
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-              # STAGG
-              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
-              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
+              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
+              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
-              # WELLER
               "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
               "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
 
-              #JACK DANIELS
               "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
               "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
 
@@ -65,13 +61,11 @@ jobs:
               "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
               "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
 
-              # ROCK HILL FARMS
               "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
-
-
           }
-          # 🔥 ====== END PASTE SECTION ======
+
+          any_found = False
 
           for name, url in PRODUCTS.items():
               print(f"\nChecking {name}")
@@ -80,35 +74,46 @@ jobs:
                   r = requests.get(url, headers=HEADERS, timeout=10)
                   text = r.text.lower()
 
-                  # 🔥 STOCK DETECTION
                   in_stock = any(x in text for x in [
                       "add to cart",
                       "pickup available"
                   ])
 
-                  filename = f"{name}.txt"
+                  hash_now = hashlib.md5(text.encode()).hexdigest()
+                  hash_file = f"{name}_hash.txt"
 
-                  previous_status = None
+                  old_hash = None
+                  if os.path.exists(hash_file):
+                      with open(hash_file, "r") as f:
+                          old_hash = f.read()
 
-                  if os.path.exists(filename):
-                      with open(filename, "r") as f:
-                          previous_status = f.read()
+                  status_file = f"{name}_status.txt"
+                  old_status = None
+                  if os.path.exists(status_file):
+                      with open(status_file, "r") as f:
+                          old_status = f.read()
 
                   current_status = "in_stock" if in_stock else "out_of_stock"
 
-                  # 🔥 ALERT ONLY ON CHANGE TO IN STOCK
-                  if previous_status != current_status:
-                      if current_status == "in_stock":
-                          send_text(f"🔥 IN STOCK: {name}")
-                          print("IN STOCK ALERT")
-                      else:
-                          print("Now out of stock")
+                  if old_status != current_status and current_status == "in_stock":
+                      send_text(f"🔥 IN STOCK: {name}")
+                      any_found = True
 
-                  with open(filename, "w") as f:
+                  elif old_hash and old_hash != hash_now:
+                      send_text(f"⚠️ PAGE CHANGE: {name}")
+                      any_found = True
+
+                  with open(hash_file, "w") as f:
+                      f.write(hash_now)
+
+                  with open(status_file, "w") as f:
                       f.write(current_status)
 
               except Exception as e:
                   print("Error:", e)
+
+          # 🔥 FORCE TEST TEXT
+          send_text("🧪 TEST: nothing found")
 
           print("\n✅ DONE")
           EOF
