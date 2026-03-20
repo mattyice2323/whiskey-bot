@@ -1,4 +1,4 @@
-name: Whiskey Sniper (Local Total Wine Only)
+name: Whiskey Sniper (Test Mode)
 
 on:
   schedule:
@@ -28,7 +28,7 @@ jobs:
           from datetime import datetime
           from twilio.rest import Client
 
-          print("🚀 LOCAL TOTAL WINE SNIPER STARTED")
+          print("🚀 TEST SNIPER STARTED")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
           FROM = os.environ["TWILIO_NUMBER"]
@@ -37,13 +37,14 @@ jobs:
           def send_text(msg):
               client.messages.create(body=msg, from_=FROM, to=TO)
 
-          # 🔥 TARGETED SEARCHES
+          # 🔥 SEARCHES (INCLUDING TEST BOTTLE)
           SEARCHES = {
               "Stagg": "https://www.totalwine.com/search/all?text=stagg",
               "Weller": "https://www.totalwine.com/search/all?text=weller",
               "Eagle Rare": "https://www.totalwine.com/search/all?text=eagle+rare",
               "Russell": "https://www.totalwine.com/search/all?text=russell",
-              "Jack 10/12/14": "https://www.totalwine.com/search/all?text=jack+daniels+aged"
+              "Jack Daniels": "https://www.totalwine.com/search/all?text=jack+daniels",
+              "Makers Mark (TEST)": "https://www.totalwine.com/search/all?text=makers+mark"
           }
 
           KEYWORDS = [
@@ -54,15 +55,8 @@ jobs:
               "jack daniel",
               "eagle rare",
               "heaven hill",
-              "star hill"
-          ]
-
-          # 🔥 ONLY YOUR LOCAL STORES
-          LOCAL_STORES = [
-              "maple grove",
-              "minnetonka",
-              "st louis park",
-              "bloomington"
+              "star hill",
+              "makers mark"
           ]
 
           alerted = set()
@@ -74,28 +68,18 @@ jobs:
                   r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
                   text = r.text.lower()
 
-                  # keyword detection
                   hits = [k for k in KEYWORDS if k in text]
 
-                  # stock signal detection
-                  stock_signal = any(x in text for x in [
-                      "add to cart",
-                      "pickup available",
-                      "in stock"
-                  ])
-
-                  # 🔥 STRICT LOCAL FILTER
-                  local = any(store in text for store in LOCAL_STORES)
-
-                  if hits and stock_signal and local:
-                      msg = f"🔥 LOCAL DROP: {name}"
+                  # 🔥 TEST MODE (TRIGGERS EASILY)
+                  if hits:
+                      msg = f"🧪 TEST ALERT: {name}"
                       print(msg)
 
                       if msg not in alerted:
                           send_text(msg)
                           alerted.add(msg)
                   else:
-                      print("No local signal")
+                      print("No signal")
 
               except Exception as e:
                   print("Error")
@@ -107,7 +91,7 @@ jobs:
 
               for name, url in SEARCHES.items():
                   check(name, url)
-                  time.sleep(3)
+                  time.sleep(2)
 
           else:
               print("Outside store hours")
