@@ -1,9 +1,6 @@
-name: Whiskey Sniper (Test Mode)
+name: Whiskey Sniper (Debug Test)
 
 on:
-  schedule:
-    - cron: "*/7 14-23 * * *"
-    - cron: "*/7 0-3 * * *"
   workflow_dispatch:
 
 jobs:
@@ -14,7 +11,7 @@ jobs:
       - name: Install deps
         run: pip install requests twilio
 
-      - name: Run sniper
+      - name: Run test
         env:
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
@@ -23,78 +20,29 @@ jobs:
         run: |
           python3 << 'EOF'
           import requests
-          import time
           import os
-          from datetime import datetime
           from twilio.rest import Client
 
-          print("🚀 TEST SNIPER STARTED")
+          print("START TEST")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
           FROM = os.environ["TWILIO_NUMBER"]
           TO = os.environ["YOUR_NUMBER"]
 
           def send_text(msg):
+              print("SENDING:", msg)
               client.messages.create(body=msg, from_=FROM, to=TO)
 
-          # 🔥 SEARCHES (INCLUDING TEST BOTTLE)
-          SEARCHES = {
-              "Stagg": "https://www.totalwine.com/search/all?text=stagg",
-              "Weller": "https://www.totalwine.com/search/all?text=weller",
-              "Eagle Rare": "https://www.totalwine.com/search/all?text=eagle+rare",
-              "Russell": "https://www.totalwine.com/search/all?text=russell",
-              "Jack Daniels": "https://www.totalwine.com/search/all?text=jack+daniels",
-              "Makers Mark (TEST)": "https://www.totalwine.com/search/all?text=makers+mark"
-          }
+          url = "https://www.totalwine.com/search/all?text=makers+mark"
 
-          KEYWORDS = [
-              "stagg",
-              "weller",
-              "rock hill farms",
-              "russell",
-              "jack daniel",
-              "eagle rare",
-              "heaven hill",
-              "star hill",
-              "makers mark"
-          ]
+          r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+          text = r.text.lower()
 
-          alerted = set()
+          print("LENGTH:", len(text))
 
-          def check(name, url):
-              print(f"\nChecking {name}")
+          # 🔥 FORCE DETECTION (guaranteed)
+          if len(text) > 10000:
+              send_text("TEST SUCCESS: Page loaded correctly")
 
-              try:
-                  r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=8)
-                  text = r.text.lower()
-
-                  hits = [k for k in KEYWORDS if k in text]
-
-                  # 🔥 TEST MODE (TRIGGERS EASILY)
-                  if hits:
-                      msg = f"🧪 TEST ALERT: {name}"
-                      print(msg)
-
-                      if msg not in alerted:
-                          send_text(msg)
-                          alerted.add(msg)
-                  else:
-                      print("No signal")
-
-              except Exception as e:
-                  print("Error")
-
-          hour = datetime.now().hour
-
-          if 8 <= hour <= 22:
-              print("Running checks...\n")
-
-              for name, url in SEARCHES.items():
-                  check(name, url)
-                  time.sleep(2)
-
-          else:
-              print("Outside store hours")
-
-          print("\n✅ DONE")
+          print("DONE")
           EOF
