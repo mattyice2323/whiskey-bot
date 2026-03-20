@@ -1,71 +1,90 @@
-import requests
-import os
-import hashlib
-import time
-from twilio.rest import Client
+name: Whiskey Sniper
 
-print("🚀 LIVE SNIPER STARTED")
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
-client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
+jobs:
+  run:
+    runs-on: ubuntu-latest
 
-YOUR_NUMBER = "whatsapp:+16517885840"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-def send_text(msg):
-    print("TEXT:", msg)
-    client.messages.create(
-        body=msg,
-        from_='whatsapp:+14155238886',
-        to=YOUR_NUMBER
-    )
+      - name: Install Python deps
+        run: pip install requests twilio
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+      - name: Run script
+        env:
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
+        run: |
+          python3 << 'EOF'
+          import requests
+          import os
+          from twilio.rest import Client
 
-PRODUCTS = {
+          print("🚀 START")
 
-    # EAGLE RARE
-    "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
-    "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
+          client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
 
-    # STAGG
-    "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
-    "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+          def send(msg):
+              print("TEXT:", msg)
+              client.messages.create(
+                  body=msg,
+                  from_='whatsapp:+14155238886',
+                  to='whatsapp:+16517885840'
+              )
 
-    # WELLER
-    "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
-    "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
+          PRODUCTS = {
 
-    # JACK DANIELS
-    "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
-    "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
+              # EAGLE RARE
+              "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
+              "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-    "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
-    "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
+              # STAGG
+              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
+              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
-    "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
-    "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
+              # WELLER
+              "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
+              "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
 
-    # TANYARD
-    "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
-    "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
-}
+              # JACK DANIELS 10
+              "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
+              "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
 
-# 🔁 RUN FOREVER
-while True:
-    print("\n🔄 NEW CHECK STARTING\n")
+              # JACK DANIELS 12
+              "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
+              "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
 
-    for name, url in PRODUCTS.items():
-        print(f"Checking {name}")
+              # JACK DANIELS 14
+              "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
+              "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
 
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=10)
-            text = r.text.lower()
+              # TANYARD
+              "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
+              "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
 
-            # 🔥 STOCK CHECK
-            if "add to cart" in text or "pickup available" in text:
-                send_text(f"🔥 IN STOCK: {name}")
+          }
 
-        except Exception as e:
-            print(f"Error checking {name}:", e)
+          for name, url in PRODUCTS.items():
+              print("Checking", name)
 
-    print("\n⏱ Sleeping 5 minutes...\n")
-    time.sleep(300)
+              try:
+                  r = requests.get(url, timeout=10)
+                  text = r.text.lower()
+
+                  if "add to cart" in text or "pickup available" in text:
+                      send(f"🔥 IN STOCK: {name}")
+                      print("FOUND:", name)
+                  else:
+                      print("none")
+
+              except Exception as e:
+                  print("error:", e)
+
+          print("✅ DONE")
+          EOF
