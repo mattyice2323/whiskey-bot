@@ -24,6 +24,7 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
+          import hashlib
           from datetime import datetime
           from twilio.rest import Client
 
@@ -39,7 +40,6 @@ jobs:
                   to='whatsapp:+16517885840'
               )
 
-          # 🔥 PRODUCTS
           PRODUCTS = {
 
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
@@ -64,21 +64,17 @@ jobs:
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
           }
 
-          # 🔥 DAILY CHECK FILE
           today = datetime.utcnow().strftime("%Y-%m-%d")
           heartbeat_file = "heartbeat.txt"
 
           already_sent_today = False
-
           if os.path.exists(heartbeat_file):
               with open(heartbeat_file, "r") as f:
-                  last = f.read()
-                  if last == today:
+                  if f.read() == today:
                       already_sent_today = True
 
           any_found = False
 
-          # 🔍 CHECK PRODUCTS
           for name, url in PRODUCTS.items():
               print("Checking", name)
 
@@ -86,14 +82,52 @@ jobs:
                   r = requests.get(url, timeout=10)
                   text = r.text.lower()
 
-                  if "out of stock" not in text:
-                      send(f"🔥 POSSIBLE STOCK: {name}")
+                  # 🔥 HASH FOR PAGE CHANGE
+                  hash_now = hashlib.md5(text.encode()).hexdigest()
+                  hash_file = f"{name}_hash.txt"
+
+                  old_hash = None
+                  if os.path.exists(hash_file):
+                      with open(hash_file, "r") as f:
+                          old_hash = f.read()
+
+                  # 🔥 STOCK SIGNALS
+                  in_stock = any(x in text for x in [
+                      "add to cart",
+                      "pickup available",
+                      "in stock nearby",
+                      "same day pickup"
+                  ])
+
+                  status_file = f"{name}_status.txt"
+                  old_status = None
+                  if os.path.exists(status_file):
+                      with open(status_file, "r") as f:
+                          old_status = f.read()
+
+                  current_status = "in_stock" if in_stock else "out"
+
+                  # ✅ STOCK ALERT (no spam)
+                  if current_status == "in_stock" and old_status != "in_stock":
+                      send(f"🔥 IN STOCK: {name}")
                       any_found = True
+
+                  # ⚠️ PAGE CHANGE ALERT
+                  elif old_hash and old_hash != hash_now:
+                      send(f"⚠️ PAGE CHANGE: {name}")
+                      any_found = True
+
+                  # SAVE STATE
+                  with open(hash_file, "w") as f:
+                      f.write(hash_now)
+
+                  with open(status_file, "w") as f:
+                      f.write(current_status)
 
               except Exception as e:
                   print("error:", e)
 
-          # 🔔 DAILY "I'M ALIVE" TEXT
+          # ✅ DAILY MESSAGE
           if not already_sent_today:
               send("✅ Bot running — daily check")
               with open(heartbeat_file, "w") as f:
