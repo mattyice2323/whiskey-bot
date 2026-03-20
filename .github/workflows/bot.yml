@@ -1,4 +1,4 @@
-name: Whiskey Sniper (TEST)
+name: Whiskey Sniper (WhatsApp)
 
 on:
   workflow_dispatch:
@@ -15,8 +15,6 @@ jobs:
         env:
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
-          TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
-          YOUR_NUMBER: ${{ secrets.YOUR_NUMBER }}
         run: |
           python3 << 'EOF'
           import requests
@@ -24,15 +22,20 @@ jobs:
           import hashlib
           from twilio.rest import Client
 
-          print("🚀 TEST SNIPER STARTED")
+          print("🚀 WHATSAPP SNIPER STARTED")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
-          FROM = os.environ["TWILIO_NUMBER"]
-          TO = os.environ["YOUR_NUMBER"]
+
+          # 🔥 REPLACE WITH YOUR PHONE NUMBER
+          YOUR_NUMBER = "whatsapp:+16517885840"
 
           def send_text(msg):
               print("TEXT:", msg)
-              client.messages.create(body=msg, from_=FROM, to=TO)
+              client.messages.create(
+                  body=msg,
+                  from_='whatsapp:+14155238886',
+                  to=YOUR_NUMBER
+              )
 
           HEADERS = {
               "User-Agent": "Mozilla/5.0"
@@ -43,7 +46,6 @@ jobs:
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-              # ✅ FIXED STAGG
               "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
               "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
@@ -83,8 +85,8 @@ jobs:
               except Exception as e:
                   print("Error:", e)
 
-          # 🔥 FORCE TEST TEXT (THIS IS WHAT YOU CARE ABOUT)
-          send_text("🧪 TEST: this should text you immediately")
+          # 🔥 FORCE TEST MESSAGE
+          send_text("🧪 TEST: WhatsApp alert working")
 
           print("✅ DONE")
           EOF
