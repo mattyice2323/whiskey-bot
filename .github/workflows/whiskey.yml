@@ -25,6 +25,7 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
+          import re
           from datetime import datetime
           from twilio.rest import Client
 
@@ -46,7 +47,41 @@ jobs:
           }
 
           PRODUCTS = {
-              "Makers Mark Maple Grove": "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true"
+
+              # EAGLE RARE
+              "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
+              "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
+
+              # STAGG
+              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
+              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+
+              # WELLER
+              "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
+              "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
+
+              # STAGG JR / STAGG
+              "Stagg Minnetonka 2": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
+              "Stagg Maple Grove 2": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+
+              # JACK DANIELS 10
+              "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
+              "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
+
+              # JACK DANIELS 12
+              "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
+              "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
+
+              # JACK DANIELS 14
+              "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
+              "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
+
+              # TANYARD
+              "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
+              "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
+
+              # ✅ TEST ITEM
+              "Makers Mark Maple Grove": "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true",
           }
 
           today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -65,14 +100,13 @@ jobs:
                   r = requests.get(url, headers=HEADERS, timeout=10)
                   text = r.text
 
-                  # 🔥 REAL DETECTION
+                  # 🔥 STRONGER DETECTION
                   in_stock = (
-                      "InStock" in text or
-                      "instock" in text.lower() or
-                      "inventoryStatus" in text
+                      '"inventoryStatus":"InStock"' in text or
+                      '"availability":"InStock"' in text or
+                      '"isAvailable":true' in text
                   )
 
-                  print("RAW CHECK:", "InStock" in text)
                   print(name, "IN STOCK?", in_stock)
 
                   if in_stock:
