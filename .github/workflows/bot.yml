@@ -1,4 +1,4 @@
-name: Whiskey Sniper (WhatsApp)
+name: WhatsApp Test
 
 on:
   workflow_dispatch:
@@ -9,84 +9,24 @@ jobs:
 
     steps:
       - name: Install deps
-        run: pip install requests twilio
+        run: pip install twilio
 
-      - name: Run sniper
+      - name: Send test message
         env:
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
         run: |
           python3 << 'EOF'
-          import requests
-          import os
-          import hashlib
           from twilio.rest import Client
-
-          print("🚀 WHATSAPP SNIPER STARTED")
+          import os
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
 
-          # 🔥 REPLACE WITH YOUR PHONE NUMBER
-          YOUR_NUMBER = "whatsapp:+16517885840"
+          client.messages.create(
+              body="🔥 THIS IS A DIRECT TEST MESSAGE",
+              from_='whatsapp:+14155238886',
+              to='whatsapp:+16517885840'
+          )
 
-          def send_text(msg):
-              print("TEXT:", msg)
-              client.messages.create(
-                  body=msg,
-                  from_='whatsapp:+14155238886',
-                  to=YOUR_NUMBER
-              )
-
-          HEADERS = {
-              "User-Agent": "Mozilla/5.0"
-          }
-
-          PRODUCTS = {
-
-              "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
-              "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
-
-              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
-              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
-
-              "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
-              "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
-
-              "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
-              "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
-          }
-
-          for name, url in PRODUCTS.items():
-              print(f"\nChecking {name}")
-
-              try:
-                  r = requests.get(url, headers=HEADERS, timeout=10)
-                  text = r.text.lower()
-
-                  in_stock = "add to cart" in text or "pickup available" in text
-
-                  hash_now = hashlib.md5(text.encode()).hexdigest()
-                  hash_file = f"{name}_hash.txt"
-
-                  old_hash = None
-                  if os.path.exists(hash_file):
-                      with open(hash_file, "r") as f:
-                          old_hash = f.read()
-
-                  if in_stock:
-                      send_text(f"🔥 IN STOCK: {name}")
-
-                  elif old_hash and old_hash != hash_now:
-                      send_text(f"⚠️ PAGE CHANGE: {name}")
-
-                  with open(hash_file, "w") as f:
-                      f.write(hash_now)
-
-              except Exception as e:
-                  print("Error:", e)
-
-          # 🔥 FORCE TEST MESSAGE
-          send_text("🧪 TEST: WhatsApp alert working")
-
-          print("✅ DONE")
+          print("DONE")
           EOF
