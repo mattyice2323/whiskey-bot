@@ -41,18 +41,24 @@ jobs:
 
           with sync_playwright() as p:
               browser = p.chromium.launch(headless=True)
-
-              context = browser.new_context(
-                  user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                  locale="en-US"
-              )
-
+              context = browser.new_context()
               page = context.new_page()
 
-              # 🔥 IMPORTANT: visit homepage first (sets cookies/session)
+              # 🔥 STEP 1: GO TO SITE
               page.goto("https://www.totalwine.com", timeout=60000)
               page.wait_for_timeout(3000)
 
+              # 🔥 STEP 2: SET STORE (ZIP SEARCH)
+              try:
+                  page.click("text=Select Store")
+                  page.fill("input[placeholder='Enter Zip Code']", "55369")
+                  page.wait_for_timeout(2000)
+                  page.click("text=Maple Grove")
+                  page.wait_for_timeout(3000)
+              except:
+                  print("Store selection step failed — continuing anyway")
+
+              # 🔥 STEP 3: CHECK PRODUCT
               for name, url in PRODUCTS.items():
                   print("Checking", name)
 
