@@ -25,11 +25,8 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
-          import re
           from datetime import datetime
           from twilio.rest import Client
-
-          print("🚀 START")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
 
@@ -41,47 +38,43 @@ jobs:
                   to='whatsapp:+16517885840'
               )
 
-          HEADERS = {
-              "User-Agent": "Mozilla/5.0",
-              "Accept-Language": "en-US,en;q=0.9"
-          }
+          # STORE IDS
+          MAPLE_GROVE = "1605"
+          MINNETONKA = "1608"
 
           PRODUCTS = {
 
+              # MAKERS (TEST — SHOULD HIT)
+              "Makers Mark Maple Grove": ("3700175", MAPLE_GROVE),
+              "Makers Mark Minnetonka": ("3700175", MINNETONKA),
+
               # EAGLE RARE
-              "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
-              "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
+              "Eagle Rare Maple Grove": ("98681752", MAPLE_GROVE),
+              "Eagle Rare Minnetonka": ("98681752", MINNETONKA),
 
               # STAGG
-              "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
-              "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+              "Stagg Maple Grove": ("135217750", MAPLE_GROVE),
+              "Stagg Minnetonka": ("135217750", MINNETONKA),
 
               # WELLER
-              "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
-              "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
-
-              # STAGG JR / STAGG
-              "Stagg Minnetonka 2": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
-              "Stagg Maple Grove 2": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
+              "Weller Special Reserve Maple Grove": ("13538750", MAPLE_GROVE),
+              "Weller Special Reserve Minnetonka": ("13538750", MINNETONKA),
 
               # JACK DANIELS 10
-              "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
-              "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
+              "Jack Daniels 10 Maple Grove": ("2126220956", MAPLE_GROVE),
+              "Jack Daniels 10 Minnetonka": ("2126220956", MINNETONKA),
 
               # JACK DANIELS 12
-              "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
-              "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
+              "Jack Daniels 12 Maple Grove": ("2126220955", MAPLE_GROVE),
+              "Jack Daniels 12 Minnetonka": ("2126220955", MINNETONKA),
 
               # JACK DANIELS 14
-              "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
-              "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
+              "Jack Daniels 14 Maple Grove": ("2126261899", MAPLE_GROVE),
+              "Jack Daniels 14 Minnetonka": ("2126261899", MINNETONKA),
 
-              # TANYARD
-              "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
-              "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
-
-              # ✅ TEST ITEM
-              "Makers Mark Maple Grove": "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true",
+              # TANYARD RYE
+              "JD Tanyard Maple Grove": ("2126270999", MAPLE_GROVE),
+              "JD Tanyard Minnetonka": ("2126270999", MINNETONKA),
           }
 
           today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -93,23 +86,20 @@ jobs:
                   if f.read() == today:
                       already_sent_today = True
 
-          for name, url in PRODUCTS.items():
+          for name, (product_id, store_id) in PRODUCTS.items():
               print("Checking", name)
 
               try:
-                  r = requests.get(url, headers=HEADERS, timeout=10)
-                  text = r.text
+                  url = f"https://www.totalwine.com/product/api/product/{product_id}?storeId={store_id}"
 
-                  # 🔥 STRONGER DETECTION
-                  in_stock = (
-                      '"inventoryStatus":"InStock"' in text or
-                      '"availability":"InStock"' in text or
-                      '"isAvailable":true' in text
-                  )
+                  r = requests.get(url, timeout=10)
+                  data = r.json()
 
-                  print(name, "IN STOCK?", in_stock)
+                  available = data.get("availability", {}).get("isInStock", False)
 
-                  if in_stock:
+                  print(name, "API STOCK:", available)
+
+                  if available:
                       send(f"🔥 IN STOCK: {name}")
 
               except Exception as e:
@@ -120,5 +110,5 @@ jobs:
               with open(heartbeat_file, "w") as f:
                   f.write(today)
 
-          print("✅ DONE")
+          print("DONE")
           EOF
