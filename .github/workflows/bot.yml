@@ -2,7 +2,7 @@ name: Whiskey Sniper (Live)
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # 🔥 every 5 min ALL DAY (for testing)
+    - cron: "*/5 * * * *"   # every 5 minutes all day
   workflow_dispatch:
 
 jobs:
@@ -42,7 +42,6 @@ jobs:
           HEADERS = {"User-Agent": "Mozilla/5.0"}
 
           PRODUCTS = {
-
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
@@ -109,7 +108,7 @@ jobs:
               except Exception as e:
                   print("Error:", e)
 
-          # ✅ ONCE PER DAY MESSAGE (no spam)
+          # ✅ daily heartbeat (only once)
           now = datetime.now()
           today = now.strftime("%Y-%m-%d")
 
