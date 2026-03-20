@@ -1,4 +1,3 @@
-#cron trigger
 name: Whiskey Sniper
 
 on:
@@ -71,6 +70,9 @@ jobs:
               # TANYARD
               "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
+
+              # ✅ TEST ITEM (SHOULD BE IN STOCK)
+              "Makers Mark Maple Grove": "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true",
           }
 
           today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -82,8 +84,6 @@ jobs:
                   if f.read() == today:
                       already_sent_today = True
 
-          any_found = False
-
           for name, url in PRODUCTS.items():
               print("Checking", name)
 
@@ -91,16 +91,7 @@ jobs:
                   r = requests.get(url, timeout=10)
                   text = r.text.lower()
 
-                  # PAGE HASH
-                  hash_now = hashlib.md5(text.encode()).hexdigest()
-                  hash_file = f"{name}_hash.txt"
-
-                  old_hash = None
-                  if os.path.exists(hash_file):
-                      with open(hash_file, "r") as f:
-                          old_hash = f.read()
-
-                  # STOCK SIGNAL
+                  # STOCK DETECTION (STRICT)
                   in_stock = any(x in text for x in [
                       "add to cart",
                       "pickup available",
@@ -108,30 +99,8 @@ jobs:
                       "same day pickup"
                   ])
 
-                  status_file = f"{name}_status.txt"
-                  old_status = None
-                  if os.path.exists(status_file):
-                      with open(status_file, "r") as f:
-                          old_status = f.read()
-
-                  current_status = "in_stock" if in_stock else "out"
-
-                  # STOCK ALERT
-                  if current_status == "in_stock" and old_status != "in_stock":
+                  if in_stock:
                       send(f"🔥 IN STOCK: {name}")
-                      any_found = True
-
-                  # PAGE CHANGE ALERT
-                  elif old_hash and old_hash != hash_now:
-                      send(f"⚠️ PAGE CHANGE: {name}")
-                      any_found = True
-
-                  # SAVE STATE
-                  with open(hash_file, "w") as f:
-                      f.write(hash_now)
-
-                  with open(status_file, "w") as f:
-                      f.write(current_status)
 
               except Exception as e:
                   print("error:", e)
