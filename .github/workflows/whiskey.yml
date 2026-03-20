@@ -24,6 +24,7 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
+          from datetime import datetime
           from twilio.rest import Client
 
           print("🚀 START")
@@ -38,38 +39,46 @@ jobs:
                   to='whatsapp:+16517885840'
               )
 
+          # 🔥 PRODUCTS
           PRODUCTS = {
 
-              # EAGLE RARE
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-              # STAGG
               "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
               "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
-              # WELLER
               "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
               "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
 
-              # JACK DANIELS 10
               "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
               "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
 
-              # JACK DANIELS 12
               "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
               "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
 
-              # JACK DANIELS 14
               "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
               "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
 
-              # TANYARD
               "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
-
           }
 
+          # 🔥 DAILY CHECK FILE
+          today = datetime.utcnow().strftime("%Y-%m-%d")
+          heartbeat_file = "heartbeat.txt"
+
+          already_sent_today = False
+
+          if os.path.exists(heartbeat_file):
+              with open(heartbeat_file, "r") as f:
+                  last = f.read()
+                  if last == today:
+                      already_sent_today = True
+
+          any_found = False
+
+          # 🔍 CHECK PRODUCTS
           for name, url in PRODUCTS.items():
               print("Checking", name)
 
@@ -77,14 +86,18 @@ jobs:
                   r = requests.get(url, timeout=10)
                   text = r.text.lower()
 
-                  if "add to cart" in text or "pickup available" in text:
-                      send(f"🔥 IN STOCK: {name}")
-                      print("FOUND:", name)
-                  else:
-                      print("none")
+                  if "out of stock" not in text:
+                      send(f"🔥 POSSIBLE STOCK: {name}")
+                      any_found = True
 
               except Exception as e:
                   print("error:", e)
+
+          # 🔔 DAILY "I'M ALIVE" TEXT
+          if not already_sent_today:
+              send("✅ Bot running — daily check")
+              with open(heartbeat_file, "w") as f:
+                  f.write(today)
 
           print("✅ DONE")
           EOF
