@@ -1,19 +1,21 @@
 name: Whiskey Sniper
 
 on:
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
+  push:
 
 jobs:
   run:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Install deps
-        run: |
-          pip install playwright twilio
-          playwright install chromium
+      - name: Install Python deps
+        run: pip install requests twilio
 
       - name: Run script
         env:
@@ -21,9 +23,9 @@ jobs:
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
         run: |
           python3 << 'EOF'
-          from playwright.sync_api import sync_playwright
-          from twilio.rest import Client
+          import requests
           import os
+          from twilio.rest import Client
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
 
@@ -36,43 +38,47 @@ jobs:
               )
 
           PRODUCTS = {
-              "Makers Mark Maple Grove": "https://www.totalwine.com/p/3700175?s=1605",
+              "Makers Mark": "makers-mark",
+              "Eagle Rare": "eagle-rare",
+              "Stagg": "stagg",
+              "Weller Special Reserve": "weller-special-reserve",
+              "Jack Daniels 10": "jack-daniels-10",
+              "Jack Daniels 12": "jack-daniels-12",
+              "Jack Daniels 14": "jack-daniels-14",
+              "JD Tanyard Rye": "tanyard"
           }
 
-          with sync_playwright() as p:
-              browser = p.chromium.launch(headless=True)
-              context = browser.new_context()
-              page = context.new_page()
+          STORES = {
+              "Maple Grove": "1605",
+              "Minnetonka": "1608"
+          }
 
-              # 🔥 STEP 1: GO TO SITE
-              page.goto("https://www.totalwine.com", timeout=60000)
-              page.wait_for_timeout(3000)
+          for product_name, keyword in PRODUCTS.items():
+              for store_name, store_id in STORES.items():
 
-              # 🔥 STEP 2: SET STORE (ZIP SEARCH)
-              try:
-                  page.click("text=Select Store")
-                  page.fill("input[placeholder='Enter Zip Code']", "55369")
-                  page.wait_for_timeout(2000)
-                  page.click("text=Maple Grove")
-                  page.wait_for_timeout(3000)
-              except:
-                  print("Store selection step failed — continuing anyway")
+                  try:
+                      url = f"https://www.totalwine.com/search/api/product?text={keyword}&storeId={store_id}"
 
-              # 🔥 STEP 3: CHECK PRODUCT
-              for name, url in PRODUCTS.items():
-                  print("Checking", name)
+                      r = requests.get(url, timeout=10)
+                      data = r.json()
 
-                  page.goto(url, timeout=60000)
-                  page.wait_for_timeout(5000)
+                      found = False
 
-                  content = page.content().lower()
+                      for item in data.get("products", []):
+                          name = item.get("name", "").lower()
 
-                  print("add to cart found?", "add to cart" in content)
+                          if keyword in name:
+                              if item.get("stockLevel", 0) > 0:
+                                  found = True
+                                  break
 
-                  if "add to cart" in content:
-                      send(f"🔥 IN STOCK: {name}")
-                  else:
-                      send(f"❌ NOT DETECTED: {name}")
+                      print(product_name, store_name, "IN STOCK?", found)
 
-              browser.close()
+                      if found:
+                          send(f"🔥 IN STOCK: {product_name} @ {store_name}")
+
+                  except Exception as e:
+                      print("error:", e)
+
+          print("DONE")
           EOF
