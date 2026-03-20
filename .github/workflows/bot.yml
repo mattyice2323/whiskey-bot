@@ -1,4 +1,4 @@
-name: Whiskey Sniper (Debug Test)
+name: Whiskey Sniper (Real Detection)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
       - name: Install deps
         run: pip install requests twilio
 
-      - name: Run test
+      - name: Run sniper
         env:
           TWILIO_SID: ${{ secrets.TWILIO_SID }}
           TWILIO_AUTH: ${{ secrets.TWILIO_AUTH }}
@@ -23,7 +23,7 @@ jobs:
           import os
           from twilio.rest import Client
 
-          print("START TEST")
+          print("🚀 REAL SNIPER STARTED")
 
           client = Client(os.environ["TWILIO_SID"], os.environ["TWILIO_AUTH"])
           FROM = os.environ["TWILIO_NUMBER"]
@@ -33,16 +33,38 @@ jobs:
               print("SENDING:", msg)
               client.messages.create(body=msg, from_=FROM, to=TO)
 
-          url = "https://www.totalwine.com/search/all?text=makers+mark"
+          SEARCHES = {
+              "Stagg": "stagg",
+              "Weller": "weller",
+              "Eagle Rare": "eagle rare",
+              "Russell": "russell",
+              "Makers Mark (TEST)": "makers mark"
+          }
 
-          r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-          text = r.text.lower()
+          alerted = set()
 
-          print("LENGTH:", len(text))
+          for name, query in SEARCHES.items():
+              print(f"\nChecking {name}")
 
-          # 🔥 FORCE DETECTION (guaranteed)
-          if len(text) > 10000:
-              send_text("TEST SUCCESS: Page loaded correctly")
+              try:
+                  url = f"https://www.totalwine.com/search/api/search?text={query}&pageSize=24"
+                  r = requests.get(url)
+                  data = r.json()
 
-          print("DONE")
+                  products = data.get("products", [])
+
+                  if products:
+                      msg = f"🔥 FOUND RESULTS: {name} ({len(products)} items)"
+                      print(msg)
+
+                      if msg not in alerted:
+                          send_text(msg)
+                          alerted.add(msg)
+                  else:
+                      print("No results")
+
+              except Exception as e:
+                  print("Error:", e)
+
+          print("\n✅ DONE")
           EOF
