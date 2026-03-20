@@ -25,7 +25,6 @@ jobs:
           python3 << 'EOF'
           import requests
           import os
-          import hashlib
           from datetime import datetime
           from twilio.rest import Client
 
@@ -43,35 +42,28 @@ jobs:
 
           PRODUCTS = {
 
-              # EAGLE RARE
               "Eagle Rare Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1608&igrules=true",
               "Eagle Rare Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/eagle-rare-10-year-barrel-select/p/98681752?s=1605&igrules=true",
 
-              # STAGG
               "Stagg Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1608&igrules=true",
               "Stagg Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/stagg-bourbon/p/135217750?s=1605&igrules=true",
 
-              # WELLER
               "Weller Special Reserve Minnetonka": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1608&igrules=true",
               "Weller Special Reserve Maple Grove": "https://www.totalwine.com/spirits/bourbon/small-batch-bourbon/wl-weller-special-reserve-bourbon/p/13538750?s=1605&igrules=true",
 
-              # JACK DANIELS 10
               "Jack Daniels 10 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1608&igrules=true",
               "Jack Daniels 10 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-10-year-tennessee-whiskey/p/2126220956?s=1605&igrules=true",
 
-              # JACK DANIELS 12
               "Jack Daniels 12 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1608&igrules=true",
               "Jack Daniels 12 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-12-year-tennessee-whiskey/p/2126220955?s=1605&igrules=true",
 
-              # JACK DANIELS 14
               "Jack Daniels 14 Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1608&igrules=true",
               "Jack Daniels 14 Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/jack-daniels-14-year-tennessee-whiskey/p/2126261899?s=1605&igrules=true",
 
-              # TANYARD
               "Jack Daniels Tanyard Minnetonka": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1608&igrules=true",
               "Jack Daniels Tanyard Maple Grove": "https://www.totalwine.com/spirits/american-whiskey/tennessee-whiskey/jack-daniels-single-barrel-barrel-proof-tanyard-hill-rye-whiskey/p/2126270999?s=1605&igrules=true",
 
-              # ✅ TEST ITEM (SHOULD BE IN STOCK)
+              # ✅ TEST ITEM (THIS SHOULD TRIGGER)
               "Makers Mark Maple Grove": "https://www.totalwine.com/spirits/deals/bourbon/small-batch-bourbon/makers-mark-bourbon-whisky/p/3700175?s=1605&igrules=true",
           }
 
@@ -91,13 +83,15 @@ jobs:
                   r = requests.get(url, timeout=10)
                   text = r.text.lower()
 
-                  # STOCK DETECTION (STRICT)
+                  # 🔥 NEW DETECTION (WORKS WITH TOTAL WINE)
                   in_stock = any(x in text for x in [
-                      "add to cart",
-                      "pickup available",
-                      "in stock nearby",
-                      "same day pickup"
+                      "productavailability",
+                      "availableforpickup",
+                      '"availability":"in_stock"',
+                      '"isavailable":true'
                   ])
+
+                  print(name, "IN STOCK?", in_stock)
 
                   if in_stock:
                       send(f"🔥 IN STOCK: {name}")
@@ -105,7 +99,6 @@ jobs:
               except Exception as e:
                   print("error:", e)
 
-          # DAILY MESSAGE
           if not already_sent_today:
               send("✅ Bot running — daily check")
               with open(heartbeat_file, "w") as f:
