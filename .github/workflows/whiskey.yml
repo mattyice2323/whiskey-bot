@@ -1,3 +1,4 @@
+#cron trigger
 name: Whiskey Sniper
 
 on:
