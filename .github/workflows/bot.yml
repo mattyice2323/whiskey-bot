@@ -1,0 +1,59 @@
+name: Whiskey Bot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Run script
+        run: |
+          python3 << 'EOF'
+          import requests
+          from datetime import datetime
+          import time
+
+          print("START")
+
+          KEYWORDS = [
+          "stagg",
+          "weller",
+          "eagle rare"
+          ]
+
+          STORES = {
+          "Total Wine": "https://www.totalwine.com/search/all?text=bourbon"
+          }
+
+          def check(name, url):
+              print("Checking " + name)
+              try:
+                  r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+                  text = r.text.lower()
+
+                  found = []
+                  for k in KEYWORDS:
+                      if k in text:
+                          found.append(k)
+
+                  if found:
+                      print(name + " FOUND: " + ", ".join(found))
+                  else:
+                      print(name + " none")
+
+              except:
+                  print(name + " error")
+
+          hour = datetime.now().hour
+
+          if hour >= 8 and hour <= 22:
+              for name in STORES:
+                  check(name, STORES[name])
+                  time.sleep(2)
+          else:
+              print("Outside hours")
+
+          print("DONE")
+          EOF
